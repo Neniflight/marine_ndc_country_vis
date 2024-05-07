@@ -15,7 +15,7 @@
   let rotateEnabled = true;
 
   onMount(() => {
-    width = (2/3) * window.innerWidth;
+    width = (0.5) * window.innerWidth;
     height = (2/3) * window.innerHeight;
 
     projection = d3.geoOrthographic()
@@ -70,7 +70,7 @@
 
     barChartContainer = d3.select("#bar-chart-container")
         .append("svg")
-        .attr("width", width / 2 - 60) // Half the width for the bar chart
+        .attr("width", width - 60) 
         .attr("height", height);
 
     globeGroup = svg.append("g");
@@ -126,8 +126,8 @@
             .join("path")
             .attr("class", "country")
             .attr("d", path)
-            // .transition() for some reason, the bar chart does not appear when i uncomment this
-            // .duration(1000)
+            .transition() 
+            .duration(1000)
             .style("fill", function (d) {
               let countryID = d.id;
               if (ndcDataMap.has(countryID)) {
@@ -154,50 +154,72 @@
               d3.select(".tooltip").style("display", "none");
             });
         }
+        function updateBarChart() {
+          barChartContainer.selectAll("*").remove();
+
+          ndcData.sort((a, b) => b[selectedTerm + "_freq_per_10000"] - a[selectedTerm + "_freq_per_10000"]);
+          const topCountries = ndcData.slice(0, 10);
+
+          const xScale = d3.scaleBand()
+            .domain(topCountries.map(d => d.country))
+            .range([-6, width * 0.5 + 60])
+            .padding(0.1);
+
+          const yScale = d3.scaleLinear()
+            .domain([0, maxValue])
+            .range([height * 0.5, 0]);
+
+          const xAxis = d3.axisBottom(xScale)
+            .tickSize(0)
+          
+          const xAxisGroup = barChartContainer.append("g")
+            .attr("transform", "translate(40," + (height * 0.5) +  ")")
+            .call(xAxis)
+            .selectAll("text")
+            .attr("transform", "translate(0, 10) rotate(-60)")
+            .style("text-anchor", "end");
+
+          const yAxis = d3.axisLeft(yScale)
+            .ticks(5)
+            .tickSizeInner(-width * 0.6);
+
+          const yAxisGroup = barChartContainer.append("g")
+            .call(yAxis)
+            .attr("transform", "translate(40, 0)");
+
+          barChartContainer.append("text")
+            .attr("class", "x label")
+            .attr("text-anchor", "end")
+            .attr("x", width * 0.25)
+            .attr("y", height * 0.65)
+            .attr("transform", "translate(40, 10)")
+            .text("Country");
+
+          barChartContainer.append("text")
+              .attr("class", "y label")
+              .attr("text-anchor", "middle")
+              .attr("x", -height * 0.25)
+              .attr("y", 10)
+              .attr("transform", "rotate(-90)")
+              .text("Word Frequency per 10k Words");
+
+          barChartContainer.selectAll(".bar")
+            .data(ndcData)
+            .enter().append("rect")
+            .attr("class", "bar")
+            .attr("x", d => xScale(d.country))
+            .attr("width", xScale.bandwidth())
+            .attr("y", height * 0.5)
+            .attr("height", 0) 
+            .attr("fill", "steelblue")
+            .attr("transform", "translate(42, 0)")
+            .transition() 
+            .duration(1000) 
+            .attr("y", d => yScale(+d[selectedTerm + "_freq_per_10000"]))
+            .attr("height", d => height * 0.5 - yScale(+d[selectedTerm + "_freq_per_10000"]));
+        }
+        updateBarChart();
         updateGlobeColors();
-
-        barChartContainer.selectAll("*").remove();
-
-        ndcData.sort((a, b) => b[selectedTerm + "_freq_per_10000"] - a[selectedTerm + "_freq_per_10000"]);
-        const topCountries = ndcData.slice(0, 10);
-
-        const xScale = d3.scaleBand()
-          .domain(topCountries.map(d => d.country))
-          .range([-6, width * 0.5 + 60])
-          .padding(0.1);
-
-        const yScale = d3.scaleLinear()
-          .domain([0, maxValue])
-          .range([height * 0.5, 0]);
-
-        const xAxis = d3.axisBottom(xScale)
-          .tickSize(0)
-        
-        const xAxisGroup = barChartContainer.append("g")
-          .attr("transform", "translate(0," + (height * 0.5) +  ")")
-          .call(xAxis)
-          .selectAll("text")
-          .attr("transform", "translate(20, 0) rotate(-60)")
-          .style("text-anchor", "end");
-
-        const yAxis = d3.axisLeft(yScale)
-          .ticks(5)
-          .tickSizeInner(-width * 0.5);
-
-        const yAxisGroup = barChartContainer.append("g")
-          .call(yAxis)
-          .attr("transform", "translate(20, 0)");
-
-        barChartContainer.selectAll(".bar")
-          .data(ndcData)
-          .enter().append("rect")
-          .attr("class", "bar")
-          .attr("x", d => xScale(d.country))
-          .attr("width", xScale.bandwidth())
-          .attr("y", d => yScale(+d[selectedTerm + "_freq_per_10000"]))
-          .attr("height", d => height * 0.5 - yScale(+d[selectedTerm + "_freq_per_10000"]))
-          .attr("fill", "steelblue")
-          .attr("transform", "translate(20, 0)");
       });
 
 
@@ -238,6 +260,5 @@
 
   .container {
     display: flex;
-
   }
 </style>
