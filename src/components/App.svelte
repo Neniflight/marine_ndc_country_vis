@@ -204,7 +204,7 @@
               .text("Word Frequency per 10k Words");
 
           barChartContainer.selectAll(".bar")
-            .data(ndcData)
+            .data(ndcData) 
             .enter().append("rect")
             .attr("class", "bar")
             .attr("x", d => xScale(d.country))
