@@ -103,7 +103,6 @@
 
   afterUpdate(() => {
     updateVisualization();
-    updateLegend();
   });
 
   function updateVisualization() {
