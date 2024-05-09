@@ -1,9 +1,8 @@
 <script>
-  // Write your JS here, or import other files
   import * as d3 from 'd3';
   import { onMount, afterUpdate } from 'svelte';
 
-  // Define variables
+  // Define variables to start
   let width, height, start;
   let maxValue;
   let projection;
@@ -22,6 +21,7 @@
       .scale(250)
       .translate([width / 2, height / 2])
       .clipAngle(90);
+    // define draging functions for globe visualizations
     const drag = d3.drag()
         .subject(function () {
             const r = projection.rotate();
@@ -51,9 +51,8 @@
           .scaleExtent([0.75, 10]) // Set the minimum and maximum zoom levels
           .on("zoom", function (event) {
               globeGroup.attr("transform", calculateZoomTranslation(event.transform));
-              // console.log("Zoom Scale:", event.transform.k);
     });
-
+    // function to rotate the globe
     function rotateGlobe() {
           if (rotateEnabled == false){return;}
 
@@ -62,12 +61,12 @@
           globeGroup.selectAll("path.country")
               .attr("d", path);
     }
-
+    // initialize global vis
     svg  = d3.select("#globe-container")
       .append("svg")
       .attr("width", width )
       .attr("height", height)
-
+    // initialize bar chart vis
     barChartContainer = d3.select("#bar-chart-container")
         .append("svg")
         .attr("width", width - 60) 
@@ -92,6 +91,7 @@
           .attr("d", path)
 
         updateVisualization();
+        updateLegend();
     })
 
     svg.call(drag);
@@ -103,6 +103,7 @@
 
   afterUpdate(() => {
     updateVisualization();
+    updateLegend();
   });
 
   function updateVisualization() {
@@ -136,14 +137,23 @@
               } else {
                 return "black";
               }
-            })
+            });
+          }
+
+        function updateTooltipContent() {
+          globeGroup.selectAll(".country")
             .on("mouseover", function(event, d) {
               let countryID = d.id
               let countryName = d.properties.name;
-              let termFreq = ndcDataMap.get(countryID).toFixed(2) || 0;
+              let termFreq = ndcDataMap.get(countryID);
+              if (termFreq !== undefined) {
+                termFreq = termFreq.toFixed(2);
+              } else {
+                termFreq = 0;
+              }
               d3.select(".tooltip")
-                .style("display", "block")
-                .html(`<strong>${countryName}</strong><br>Term Frequency: ${termFreq}`);
+                .html(`<strong>${countryName}</strong><br>Term Frequency: ${termFreq}`)
+                .style("display", "block");
             })
             .on("mousemove", function(event) {
               d3.select(".tooltip")
@@ -153,7 +163,8 @@
             .on("mouseout", function() {
               d3.select(".tooltip").style("display", "none");
             });
-        }
+        
+          }
         function updateBarChart() {
           barChartContainer.selectAll("*").remove();
 
@@ -162,7 +173,7 @@
 
           const xScale = d3.scaleBand()
             .domain(topCountries.map(d => d.country))
-            .range([-6, width * 0.5 + 60])
+            .range([0, width * 0.5 + 60])
             .padding(0.1);
 
           const yScale = d3.scaleLinear()
@@ -177,6 +188,7 @@
             .call(xAxis)
             .selectAll("text")
             .attr("transform", "translate(0, 10) rotate(-60)")
+            .attr("font-size", "0.8rem")
             .style("text-anchor", "end");
 
           const yAxis = d3.axisLeft(yScale)
@@ -192,19 +204,19 @@
             .attr("text-anchor", "end")
             .attr("x", width * 0.25)
             .attr("y", height * 0.65)
-            .attr("transform", "translate(40, 10)")
+            .attr("transform", "translate(40, 40)")
             .text("Country");
 
           barChartContainer.append("text")
               .attr("class", "y label")
               .attr("text-anchor", "middle")
               .attr("x", -height * 0.25)
-              .attr("y", 10)
+              .attr("y", 20)
               .attr("transform", "rotate(-90)")
               .text("Word Frequency per 10k Words");
 
           barChartContainer.selectAll(".bar")
-            .data(ndcData) 
+            .data(topCountries) 
             .enter().append("rect")
             .attr("class", "bar")
             .attr("x", d => xScale(d.country))
@@ -218,8 +230,71 @@
             .attr("y", d => yScale(+d[selectedTerm + "_freq_per_10000"]))
             .attr("height", d => height * 0.5 - yScale(+d[selectedTerm + "_freq_per_10000"]));
         }
+
+        function updateLegend() {
+          const legendSvg = d3.select("#legend");
+          legendSvg.selectAll("*").remove();
+
+          const legendWidth = 400;
+          const legendHeight = 20;
+          const legendPadding = 20;
+
+          const colorScale = d3.scaleSequential()
+            .domain([0, maxValue])
+            .interpolator(d3.interpolateBuGn);
+
+          const numStops = 10; 
+
+          const gradientData = d3.range(0, numStops).map(d => d / (numStops - 1));
+
+          const legendGradient = legendSvg.append("defs")
+            .append("linearGradient")
+            .attr("id", "legendGradient")
+            .attr("x1", "0%")
+            .attr("y1", "0%")
+            .attr("x2", "100%")
+            .attr("y2", "0%");
+
+          legendGradient.selectAll("stop")
+            .data(gradientData)
+            .enter().append("stop")
+            .attr("offset", d => d * 100 + "%")
+            .attr("stop-color", d => colorScale(d * maxValue));
+
+          // Add the color gradient rectangle
+          legendSvg.append("rect")
+            .attr("x", legendPadding)
+            .attr("y", legendPadding)
+            .attr("width", legendWidth)
+            .attr("height", legendHeight)
+            .style("fill", "url(#legendGradient)");
+
+          // Create scale for legend axis
+          const legendScale = d3.scaleLinear()
+            .domain([0, maxValue])
+            .range([0, legendWidth]);
+
+          // Create and add the legend axis
+          const legendAxis = d3.axisBottom(legendScale)
+            .ticks(5)
+            .tickSize(5)
+            .tickFormat(d3.format(".2f"));
+
+          legendSvg.append("g")
+            .attr("class", "legend-axis")
+            .attr("transform", `translate(${legendPadding}, ${legendHeight + legendPadding + 5})`)
+            .call(legendAxis);
+
+          // Add legend title
+          legendSvg.append("text")
+            .attr("x", legendPadding)
+            .attr("y", legendPadding - 5)
+            .text("Frequency");
+        }
         updateBarChart();
         updateGlobeColors();
+        updateTooltipContent();
+        updateLegend();
       });
 
 
@@ -235,6 +310,8 @@
     <div id="bar-chart-container"></div>
   </div>
   <script src="https://d3js.org/topojson.v3.min.js"></script>
+  <svg id="legend" width=50%>
+  </svg>
   <select id="term" bind:value={selectedTerm}>
     <option value="climate change">climate change</option>
     <option value="coastal impacts">coastal impacts</option>
@@ -260,5 +337,15 @@
 
   .container {
     display: flex;
+  }
+
+  main {
+    display: flex;
+    flex-direction: column;
+  }
+
+  select {
+    width: 30%;
+    align-self: center;
   }
 </style>
