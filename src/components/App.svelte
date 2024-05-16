@@ -85,17 +85,19 @@
         .attr("class", "ocean")
         .attr("d", path)
         .style('fill', '#D3D3D3')
+        .style("stroke", "black")
+        .style("stroke-width", 1);
 
-        globeGroup.selectAll(".country")
-          .data(topojson.feature(world, world.objects.countries).features)
-          .enter().append("path")
-          .attr("class", "country")
-          .attr("d", path)
-          .style("stroke", "black")
-          .style("stroke-width", 0.5);
+      globeGroup.selectAll(".country")
+        .data(topojson.feature(world, world.objects.countries).features)
+        .enter().append("path")
+        .attr("class", "country")
+        .attr("d", path)
+        .style("stroke", "black")
+        .style("stroke-width", 0.5);
 
-        updateVisualization();
-        updateLegend();
+      updateVisualization();
+      updateLegend();
     })
 
     svg.call(drag);
