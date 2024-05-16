@@ -28,10 +28,12 @@
             return { x: r[0] / 2, y: -r[1] / 2 };
         })
         .on("drag", function (event) {
+          const zoomScale = d3.zoomTransform(svg.node()).k; 
+          const sensitivityFactor = 0.5 / zoomScale; 
           const rotate = projection.rotate();
-          projection.rotate([rotate[0] + event.dx * 0.5, rotate[1] - event.dy * 0.5]);
+          projection.rotate([rotate[0] + event.dx * sensitivityFactor, rotate[1] - event.dy * sensitivityFactor]);
           globeGroup.selectAll("path.country")
-              .attr("d", path);
+            .attr("d", path);
           rotateEnabled = false;
           start = Date.now();
         });
@@ -48,7 +50,7 @@
     }
 
     const zoom = d3.zoom()
-          .scaleExtent([0.75, 10]) // Set the minimum and maximum zoom levels
+          .scaleExtent([0.25, 10]) // Set the minimum and maximum zoom levels
           .on("zoom", function (event) {
               globeGroup.attr("transform", calculateZoomTranslation(event.transform));
     });
@@ -82,13 +84,15 @@
         .datum({type: "Sphere"})
         .attr("class", "ocean")
         .attr("d", path)
-        .style('fill', '#132A50')
+        .style('fill', '#D3D3D3')
 
         globeGroup.selectAll(".country")
           .data(topojson.feature(world, world.objects.countries).features)
           .enter().append("path")
           .attr("class", "country")
           .attr("d", path)
+          .style("stroke", "black")
+          .style("stroke-width", 0.5);
 
         updateVisualization();
         updateLegend();
@@ -111,7 +115,7 @@
         console.log(maxValue);
         const colorScale = d3.scaleSequential()
           .domain([0, maxValue])
-          .interpolator(d3.interpolateBuGn);
+          .interpolator(d3.interpolateYlGnBu);
 
         const ndcDataMap = new Map();
         ndcData.forEach(d => {
@@ -134,7 +138,7 @@
                 let climateFreq = ndcDataMap.get(countryID);
                 return colorScale(climateFreq);
               } else {
-                return "black";
+                return "gray";
               }
             });
           }
@@ -240,7 +244,7 @@
 
           const colorScale = d3.scaleSequential()
             .domain([0, maxValue])
-            .interpolator(d3.interpolateBuGn);
+            .interpolator(d3.interpolateYlGnBu);
 
           const numStops = 10; 
 
