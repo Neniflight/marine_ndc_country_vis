@@ -123,7 +123,7 @@
           const value = +d[selectedTerm + "_freq_per_10000"];
           ndcDataMap.set(country, value);
         });
-
+        //update colors on country when you change options
         function updateGlobeColors() {
           globeGroup.selectAll(".country")
             .data(topojson.feature(world, world.objects.countries).features)
