@@ -94,7 +94,7 @@
 
 	function updateVisualization() {
     d3.csv("topic_keyword_freq_by_countryndc_CN.csv").then(ndcData => {
-      maxValue = d3.max(ndcData, d => +d[selectedTerm + "_freq_per_10000"]);
+      maxValue = d3.max(ndcData, d => +d[selectedTerm + "_freq_per_10000"]/10000*d['num_words']);
       const colorScale = d3.scaleSequential()
         .domain([0, maxValue])
         .interpolator(d3.interpolateYlGnBu);
@@ -102,7 +102,7 @@
       const ndcDataMap = new Map();
       ndcData.forEach(d => {
         const country = d.numeric_code;
-        const value = +d[selectedTerm + "_freq_per_10000"];
+        const value = +d[selectedTerm + "_freq_per_10000"]/10000*d['num_words'];
         ndcDataMap.set(country, value);
       });
 
@@ -135,7 +135,7 @@
 							termFreq = 0;
 					}
           d3.select(".tooltip")
-            .html(`<strong>${countryName}</strong><br>Term Frequency: ${termFreq.toFixed(2)}`)
+            .html(`<strong>${countryName}</strong><br>Term Count: ${termFreq.toFixed(2)}`)
             .style("display", "block");
         })
         .on("mousemove", event => {
@@ -202,7 +202,7 @@
     legendSvg.append("text")
       .attr("x", legendPadding)
       .attr("y", legendPadding - 5)
-      .text("Frequency");
+      .text("Count");
   }
 
     afterUpdate(() => {

@@ -3,6 +3,7 @@
   import BarChart from './BarChart.svelte';
 
   let selectedTerm = "climate change";
+  let selectedCount = "word counts"
 </script>
 
 <main>
@@ -21,6 +22,10 @@
     <option value="industry">industry</option>
     <option value="blue economy">blue economy</option>
     <option value="policy">policy</option>
+  </select>
+  <select id="frequency_count" bind:value={selectedCount}>
+    <option value="frequency per 10k words">frequency per 10k words</option>
+    <option value="word counts">word counts</option>
   </select>
 </main>
 
