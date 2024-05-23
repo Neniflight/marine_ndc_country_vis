@@ -3,7 +3,8 @@
 	import { onMount, afterUpdate} from 'svelte';
 
 	export let selectedTerm;
-  let width, height, barChartContainer;
+	export let selectedCount;
+  let width, height, barChartContainer, maxValue;
 
 	onMount(() => {
     width = (0.4) * window.innerWidth;
@@ -20,9 +21,15 @@
 		barChartContainer.selectAll("*").remove();
 
 		d3.csv("topic_keyword_freq_by_countryndc_CN.csv").then(ndcData => {
-			const maxValue = d3.max(ndcData, d => +d[selectedTerm + "_freq_per_10000"]/10000*d['num_words']);
-      ndcData.sort((a, b) => (b[selectedTerm + "_freq_per_10000"]/10000*b['num_words'] - a[selectedTerm + "_freq_per_10000"]/10000*a['num_words']));
-      const topCountries = ndcData.slice(0, 10);
+			if (selectedCount) {
+				ndcData.forEach(d => d.adjustedFreq = +d[selectedTerm + "_freq_per_10000"] / 10000 * d['num_words']);
+			} else {
+				ndcData.forEach(d => d.adjustedFreq = +d[selectedTerm + "_freq_per_10000"]);
+			}
+			maxValue = d3.max(ndcData, d => d.adjustedFreq);
+
+			ndcData.sort((a, b) => b.adjustedFreq - a.adjustedFreq);
+			const topCountries = ndcData.slice(0, 10);
 
 			const xScale = d3.scaleBand()
 				.domain(topCountries.map(d => d.country))
@@ -37,12 +44,12 @@
 			const yAxis = d3.axisLeft(yScale).tickSize(5).tickSizeInner(-width);
 
 			barChartContainer.append("g")
-        .attr("transform", "translate(40," + (height * 0.5) + ")")
-        .call(xAxis)
-        .selectAll("text")
-        .attr("transform", "translate(0, 10) rotate(-60)")
-        .attr("font-size", "0.8rem")
-        .style("text-anchor", "end");
+				.attr("transform", "translate(40," + (height * 0.5) + ")")
+				.call(xAxis)
+				.selectAll("text")
+				.attr("transform", "translate(0, 10) rotate(-60)")
+				.attr("font-size", "0.8rem")
+				.style("text-anchor", "end");
 
 			barChartContainer.append("g")
         .call(yAxis)
@@ -62,7 +69,7 @@
         .attr("x", -height * 0.25-10)
         .attr("y", 15)
         .attr("transform", "rotate(-90)")
-        .text("Word Count by Country");
+        .text(selectedCount ? "Word Count by Country": "Word Frequency per 10k Words");
 
 			barChartContainer.selectAll(".bar")
 				.data(topCountries)
@@ -76,15 +83,16 @@
 				.attr("transform", "translate(40, 0)")
 				.transition()
 				.duration(1000)
-				.attr("y", d => yScale(+d[selectedTerm + "_freq_per_10000"]/10000*d['num_words']))
-				.attr("height", d => height * 0.5 - yScale(+d[selectedTerm + "_freq_per_10000"]/10000*d['num_words']));
+				.attr("y", d => yScale(d.adjustedFreq))
+				.attr("height", d => height * 0.5 - yScale(d.adjustedFreq));
 		})
 	}
 
 	afterUpdate(() => {
-        console.log(selectedTerm);
-        updateBarChart();
-    }) 
+		console.log(selectedTerm);
+		console.log(selectedCount);
+		updateBarChart();
+	}) 
 
 </script>
 

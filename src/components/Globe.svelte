@@ -3,6 +3,7 @@
 	import { onMount, afterUpdate } from 'svelte';
 
 	export let selectedTerm;
+  export let selectedCount;
 	let width, height, projection, svg, globeGroup, path, world, legendSvg, maxValue;
 
 	let rotateEnabled = true;
@@ -94,7 +95,7 @@
 
 	function updateVisualization() {
     d3.csv("topic_keyword_freq_by_countryndc_CN.csv").then(ndcData => {
-      maxValue = d3.max(ndcData, d => +d[selectedTerm + "_freq_per_10000"]/10000*d['num_words']);
+      maxValue = selectedCount ? d3.max(ndcData, d => +d[selectedTerm + "_freq_per_10000"]/10000*d['num_words']): d3.max(ndcData, d => +d[selectedTerm + "_freq_per_10000"]);
       const colorScale = d3.scaleSequential()
         .domain([0, maxValue])
         .interpolator(d3.interpolateYlGnBu);
@@ -102,7 +103,7 @@
       const ndcDataMap = new Map();
       ndcData.forEach(d => {
         const country = d.numeric_code;
-        const value = +d[selectedTerm + "_freq_per_10000"]/10000*d['num_words'];
+        const value = selectedCount ? +d[selectedTerm + "_freq_per_10000"]/10000*d['num_words']: +d[selectedTerm + "_freq_per_10000"];
         ndcDataMap.set(country, value);
       });
 
@@ -127,15 +128,17 @@
         .on("mouseover", (event, d) => {
           const countryID = d.id;
           const countryName = d.properties.name;
-          let termFreq = ndcDataMap.get(countryID) || 0;
-					console.log(termFreq);
+          let termFreq = ndcDataMap.get(countryID);
 					if (termFreq !== undefined) {
 						termFreq = Math.round((termFreq + Number.EPSILON) * 100) / 100
+            if (selectedCount === false) {
+              termFreq = termFreq.toFixed(2)
+            }
 					} else {
-							termFreq = 0;
+						termFreq = "No NDC found!";
 					}
           d3.select(".tooltip")
-            .html(`<strong>${countryName}</strong><br>Term Count: ${termFreq.toFixed(2)}`)
+            .html(`<strong>${countryName}</strong><br>${selectedCount ? "Word Count": "Term Freq"}: ${termFreq}`)
             .style("display", "block");
         })
         .on("mousemove", event => {
@@ -202,7 +205,7 @@
     legendSvg.append("text")
       .attr("x", legendPadding)
       .attr("y", legendPadding - 5)
-      .text("Count");
+      .text(selectedCount ? "Count" : "Frequency per 10k");
   }
 
     afterUpdate(() => {
