@@ -6,7 +6,20 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		%sveltekit.head%
 	</head>
-	<body data-sveltekit-preload-data="hover">
+	<body data-sveltekit-preload-data="hover" class="background">
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>
 </html>
+
+<style>
+	.background {
+		/* Apply a linear gradient background */
+		background: linear-gradient(#e0f7fa, #d0f7e0);
+		
+		/* Ensure the background covers the entire page */
+		background-size: cover;
+		background-repeat: no-repeat;
+		background-attachment: fixed;
+		margin: 0;
+	}
+</style>

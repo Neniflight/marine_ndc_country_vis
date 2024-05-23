@@ -6,7 +6,7 @@
   let selectedCount = true;
 </script>
 
-<main>
+<main class="background">
   <h1>Globe Visualization for NDCs word frequencies!</h1>
   <div class="container">
     <Globe {selectedTerm} {selectedCount}/>
@@ -44,6 +44,4 @@
     flex-direction: column;
     align-items: center;
   }
-
-  
 </style>
